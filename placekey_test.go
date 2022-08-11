@@ -3,6 +3,7 @@ package placekey
 import (
 	_ "embed"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -165,6 +166,41 @@ func TestFromH3String(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("FromH3String() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToHexagonalBoundary(t *testing.T) {
+	tests := []struct {
+		name    string
+		h3Index string
+		want    []struct{ Lat, Lng float64 }
+		wantErr bool
+	}{
+		{
+			name:    "0,0",
+			h3Index: "8a2a1072b59ffff",
+			want: []struct{ Lat, Lng float64 }{
+				{40.690058601, -74.044151762},
+				{40.689907695, -74.045061792},
+				{40.689270936, -74.045341418},
+				{40.688785091, -74.044711031},
+				{40.688935993, -74.043801021},
+				{40.689572744, -74.043521377},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ToHexagonalBoundary(tt.h3Index)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ToHexagonalBoundary() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToHexagonalBoundary() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
