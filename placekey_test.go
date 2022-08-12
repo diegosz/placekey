@@ -171,35 +171,39 @@ func TestFromH3String(t *testing.T) {
 	}
 }
 
-func TestToHexagonalBoundary(t *testing.T) {
+func TestToGeoBoundary(t *testing.T) {
 	tests := []struct {
 		name    string
 		h3Index string
-		want    []struct{ Lat, Lng float64 }
+		want    [][]float64
 		wantErr bool
 	}{
 		{
 			name:    "0,0",
 			h3Index: "8a2a1072b59ffff",
-			want: []struct{ Lat, Lng float64 }{
-				{40.690058601, -74.044151762},
-				{40.689907695, -74.045061792},
-				{40.689270936, -74.045341418},
-				{40.688785091, -74.044711031},
-				{40.688935993, -74.043801021},
-				{40.689572744, -74.043521377},
+			want: [][]float64{
+				{40.690058600953584, -74.04415176176158},
+				{40.68990769452519, -74.04506179239631},
+				{40.68927093604355, -74.04534141750702},
+				{40.688785090724046, -74.04471103053613},
+				{40.688935992642726, -74.04380102076254},
+				{40.68957274439054, -74.04352137709905},
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToGeoBoundary(tt.h3Index)
+			pk, err := FromH3String(tt.h3Index)
+			if (err != nil) != tt.wantErr {
+				t.Fatal(err)
+			}
+			got, err := ToGeoBoundary(pk)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToGeoBoundary() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToGeoBoundary() got = %v, want %v", got, tt.want)
 			}
 		})
@@ -424,5 +428,17 @@ func TestToGeoIssues(t *testing.T) {
 				t.Errorf("ToGeo() gotLng = %v, want %v", gotLng, tt.wantLng)
 			}
 		})
+	}
+}
+
+func BenchmarkFromGeo(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, _ = FromGeo(37.779274, -122.419262)
+	}
+}
+
+func BenchmarkPlacekeyToGeo(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, _, _ = ToGeo("@5vg-7gq-tvz")
 	}
 }
