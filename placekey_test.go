@@ -179,7 +179,7 @@ func TestToGeoBoundary(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "0,0",
+			name:    "8a2a1072b59ffff",
 			h3Index: "8a2a1072b59ffff",
 			want: [][]float64{
 				{40.690058600953584, -74.04415176176158},
