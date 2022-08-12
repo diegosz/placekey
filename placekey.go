@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/uber/h3-go"
+	"github.com/uber/h3-go/v3"
 )
 
 const (
