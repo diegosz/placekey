@@ -321,6 +321,6 @@ func radians(degrees float64) float64 {
 }
 
 // degrees converts radians to degrees
-func degrees(radians float64) float64 {
+func degrees(radians float64) float64 { //nolint:deadcode,unused
 	return radians / math.Pi * 180
 }
