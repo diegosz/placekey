@@ -2,7 +2,6 @@ package placekey
 
 import (
 	_ "embed"
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -192,23 +191,6 @@ func TestToGeoBoundary(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name:    "pentagon resolution 1",
-		// 	h3Index: "81c23ffffffffff",
-		// 	want: [][]float64{
-		// 		{-42.26111252924078, -57.99532236959882},
-		// 		{-41.11855205411782, -54.9141712970285},
-		// 		{-40.22211498519526, -53.8497030003696},
-		// 		{-37.6912453875986, -54.414765681393625},
-		// 		{-36.64293584360804, -55.16400420796509},
-		// 		{-36.2052826312824, -58.30984616813221},
-		// 		{-36.39482705911914, -59.78817573003526},
-		// 		{-38.614966841835646, -61.417114959977745},
-		// 		{-39.80088198666685, -61.70280552750996},
-		// 		{-41.71719450086273, -59.44411918804661},
-		// 	},
-		// 	wantErr: false,
-		// },
 		{
 			name:    "pentagon resolution 10",
 			h3Index: "8ac200000007fff",
@@ -234,10 +216,71 @@ func TestToGeoBoundary(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				for _, v := range got {
-					fmt.Printf("{%s, %s},\n", strconv.FormatFloat(v[0], 'f', -1, 64), strconv.FormatFloat(v[1], 'f', -1, 64))
-				}
+				// for _, v := range got {
+				// 	fmt.Printf("{%s, %s},\n", strconv.FormatFloat(v[0], 'f', -1, 64), strconv.FormatFloat(v[1], 'f', -1, 64))
+				// }
 				t.Errorf("ToGeoBoundary() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInferResolution(t *testing.T) {
+	tests := []struct {
+		name    string
+		h3Index string
+		want    int
+	}{
+		{
+			name:    "8a2a1072b59ffff",
+			h3Index: "8a2a1072b59ffff",
+			want:    10,
+		},
+		{
+			name:    "pentagon resolution 1",
+			h3Index: "81c23ffffffffff",
+			want:    1,
+		},
+		{
+			name:    "pentagon resolution 10",
+			h3Index: "8ac200000007fff",
+			want:    10,
+		},
+		{
+			name:    "EXO resolution 10",
+			h3Index: "8ac2e31064effff",
+			want:    10,
+		},
+		{
+			name:    "EXO resolution 1",
+			h3Index: "81c2fffffffffff",
+			want:    1,
+		},
+		{
+			name:    "EXO resolution 9",
+			h3Index: "89c2e31064fffff",
+			want:    9,
+		},
+		{
+			name:    "EXO resolution 11",
+			h3Index: "8bc2e31064ebfff",
+			want:    11,
+		},
+		{
+			name:    "EXO resolution 15",
+			h3Index: "8fc2e31064eb8e4",
+			want:    15,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			x, err := strconv.ParseUint(tt.h3Index, 16, 64)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := inferResolution(x)
+			if got != tt.want {
+				t.Errorf("inferResolution() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -429,7 +472,7 @@ func TestFormatIsValid(t *testing.T) {
 func TestToGeoIssues(t *testing.T) {
 	tests := []struct {
 		name    string
-		h3Index string
+		h3Int   uint64
 		wantLat float64
 		wantLng float64
 		wantErr bool
@@ -437,7 +480,7 @@ func TestToGeoIssues(t *testing.T) {
 		{
 			// https://github.com/uber/h3-go/issues/7
 			name:    "ToGeo function return values inconsistent #7",
-			h3Index: "8c194ad30d067ff",
+			h3Int:   630948894377797631, // "8c194ad30d067ff"
 			wantLat: 51.523416454245556,
 			wantLng: -0.08106823052469281,
 			wantErr: false,
@@ -445,7 +488,7 @@ func TestToGeoIssues(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			x, err := FromH3String(tt.h3Index)
+			x, err := fromH3IntUnvalidatedResolution(tt.h3Int)
 			if err != nil {
 				t.Fatal(err)
 			}

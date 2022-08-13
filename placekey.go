@@ -15,6 +15,7 @@ import (
 const (
 	earthRadius            float64 = 6371.0 // km
 	resolution             int     = 10
+	maxResolution          int     = 15
 	baseResolution         int     = 12
 	baseCellIncrement      uint64  = 1 << (3 * 15)
 	unusedResolutionFiller uint64  = 1<<(3*(15-12)) - 1 // 15-baseResolution
@@ -25,6 +26,10 @@ const (
 	paddingChar            string  = "a"
 	replacementChars       string  = "eu"
 )
+
+var ErrInvalidResolution = errors.New("invalid resolution")
+var ErrInvalidLatLngRange = errors.New("invalid lat/lng range")
+var ErrInvalidParts = errors.New("invalid parts")
 
 var (
 	replacementMap = map[string]string{
@@ -67,7 +72,7 @@ func getHeaderInt() uint64 {
 // FromGeo converts a (latitude, longitude) into a PlaceKey.
 func FromGeo(lat, lng float64) (string, error) {
 	if lat < -90 || lat > 90 || lng < -180 || lng > 180 {
-		return "", errors.New("invalid lat/lng range")
+		return "", ErrInvalidLatLngRange
 	}
 	return encodeH3Int(uint64(h3.FromGeo(h3.GeoCoord{Latitude: lat, Longitude: lng}, resolution))), nil
 }
@@ -84,7 +89,7 @@ func ToGeo(placeKey string) (lat, lng float64, err error) {
 
 // FromH3Index converts an H3 index into a PlaceKey string.
 func FromH3Index(index h3.H3Index) (string, error) {
-	return encodeH3Int(uint64(index)), nil
+	return FromH3Int(uint64(index))
 }
 
 // FromH3String converts an H3 hexadecimal string into a PlaceKey string.
@@ -93,11 +98,18 @@ func FromH3String(h3String string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return encodeH3Int(x), nil
+	return FromH3Int(x)
 }
 
 // FromH3Int converts an H3 integer into a PlaceKey.
 func FromH3Int(h3Int uint64) (string, error) {
+	if inferResolution(h3Int) != resolution {
+		return "", ErrInvalidResolution
+	}
+	return encodeH3Int(h3Int), nil
+}
+
+func fromH3IntUnvalidatedResolution(h3Int uint64) (string, error) {
 	return encodeH3Int(h3Int), nil
 }
 
@@ -202,7 +214,7 @@ func parsePlacekey(placeKey string) (what, where string, err error) {
 	if strings.Contains(placeKey, "@") {
 		ww := strings.Split(placeKey, "@")
 		if len(ww) != 2 {
-			return "", "", errors.New("invalid placeKey parts")
+			return "", "", ErrInvalidParts
 		}
 		return ww[0], ww[1], nil
 	}
@@ -306,6 +318,23 @@ func dirtyString(s string) string {
 		}
 	}
 	return s
+}
+
+func inferResolution(h3Int uint64) int {
+	// resolution can be inferred from the number of digits in the cells bit
+	// layout which are not 0b111, as the digit value can only be 0b111 when
+	// that digit is greater than the resolution of the index
+	cells := h3Int
+	res := maxResolution
+	for i := maxResolution; i >= 0; i-- {
+		d := cells & 7 // 0b111
+		if d != 7 {
+			break
+		}
+		cells >>= 3
+		res--
+	}
+	return res
 }
 
 func power64(base int64, exponent int) int64 {
