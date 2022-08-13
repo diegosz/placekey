@@ -2,6 +2,7 @@ package placekey
 
 import (
 	_ "embed"
+	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -191,6 +192,35 @@ func TestToGeoBoundary(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// {
+		// 	name:    "pentagon resolution 1",
+		// 	h3Index: "81c23ffffffffff",
+		// 	want: [][]float64{
+		// 		{-42.26111252924078, -57.99532236959882},
+		// 		{-41.11855205411782, -54.9141712970285},
+		// 		{-40.22211498519526, -53.8497030003696},
+		// 		{-37.6912453875986, -54.414765681393625},
+		// 		{-36.64293584360804, -55.16400420796509},
+		// 		{-36.2052826312824, -58.30984616813221},
+		// 		{-36.39482705911914, -59.78817573003526},
+		// 		{-38.614966841835646, -61.417114959977745},
+		// 		{-39.80088198666685, -61.70280552750996},
+		// 		{-41.71719450086273, -59.44411918804661},
+		// 	},
+		// 	wantErr: false,
+		// },
+		{
+			name:    "pentagon resolution 10",
+			h3Index: "8ac200000007fff",
+			want: [][]float64{
+				{-39.10045545269271, -57.70029017862051},
+				{-39.10035523525216, -57.69953126249852},
+				{-39.099764140502096, -57.69941956740003},
+				{-39.09949904241487, -57.70010944253918},
+				{-39.09992629443885, -57.70064751000666},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -204,6 +234,9 @@ func TestToGeoBoundary(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
+				for _, v := range got {
+					fmt.Printf("{%s, %s},\n", strconv.FormatFloat(v[0], 'f', -1, 64), strconv.FormatFloat(v[1], 'f', -1, 64))
+				}
 				t.Errorf("ToGeoBoundary() got = %v, want %v", got, tt.want)
 			}
 		})
